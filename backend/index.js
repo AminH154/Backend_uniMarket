@@ -4,8 +4,8 @@ const mongoose = require("mongoose");
 const userRouter = require("./Routes/userRouter");
 const cors = require("cors");
 require("dotenv").config({ path: __dirname + "/.env" });
-app.use(express.json());  // Augmentez la limite pour les requêtes JSON
-app.use(express.urlencoded({ limit: "10mb", extended: true })); // Augmentez la limite pour les requêtes URL-encodées
+app.use(express.json()); 
+app.use(express.urlencoded({ limit: "10mb", extended: true })); 
 
 
 // Middleware
@@ -30,6 +30,7 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => {
+    
     console.log("Connected to DB");
     app.listen(process.env.PORT, () => {
       console.log(`Server is running on port ${process.env.PORT}`);

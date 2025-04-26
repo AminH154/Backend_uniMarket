@@ -19,7 +19,7 @@ const userMongoSchema = new mongoose.Schema({
   userName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  avatar:{type: String, required: false},
+  avatar:{type: String, default: "",requared : false},
   bio :{type: String, required: false},
 });
 
