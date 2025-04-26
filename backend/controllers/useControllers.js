@@ -101,6 +101,7 @@ module.exports.register = async (req, res) => {
 };
 module.exports.profileUpdate = async (req, res) => {
   try {
+    // Vérifier si l'utilisateur est authentifié
     if (!req.userId) {
       return res.status(401).json({
         msg: "Non autorisé - Token manquant ou invalide",
@@ -126,8 +127,12 @@ module.exports.profileUpdate = async (req, res) => {
       if (user.avatar) {
         const oldImagePath = path.join(__dirname, "..", user.avatar);
         if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-          console.log("Ancienne image supprimée :", oldImagePath);
+          try {
+            fs.unlinkSync(oldImagePath);
+            console.log("Ancienne image supprimée :", oldImagePath);
+          } catch (error) {
+            console.error("Erreur lors de la suppression de l'ancienne image :", error.message);
+          }
         }
       }
 
@@ -135,12 +140,22 @@ module.exports.profileUpdate = async (req, res) => {
       user.avatar = newAvatarPath;
     }
 
+    // Mettre à jour les autres champs (par exemple, bio ou userName)
+    const { userName, bio } = req.body;
+    if (userName) user.userName = userName;
+    if (bio) user.bio = bio;
+
     // Sauvegarder les modifications
     await user.save();
+    console.log("Utilisateur mis à jour :", user);
 
+    // Générer l'URL publique du fichier téléchargé
+    const fileUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : user.avatar;
+
+    // Retourner une réponse avec l'URL du fichier et les informations utilisateur
     return res.status(200).json({
       msg: "Profil mis à jour avec succès",
-      status: true,
+      fileUrl,
       user: {
         userName: user.userName,
         bio: user.bio,
@@ -148,13 +163,13 @@ module.exports.profileUpdate = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Erreur lors de la mise à jour du profil :", error);
     return res.status(500).json({
       msg: "Erreur interne du serveur",
       status: false,
     });
   }
 };
-
 // Contrôleur pour obtenir les informations de l'utilisateur
 module.exports.getUser = async (req, res) => {
   try {
