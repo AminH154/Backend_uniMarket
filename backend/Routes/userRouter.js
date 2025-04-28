@@ -1,37 +1,39 @@
-const { login, register, profileUpdate, getUser } = require("../controllers/useControllers");
+const {login, register, profileUpdate,getAllUsersAndUserById} = require("../controllers/useControllers");
 const router = require("express").Router();
 const { verifierToken } = require("../authMiddleware/authMidleWare");
 const multer = require("multer");
-
+const jwt = require("jsonwebtoken");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads"); // Dossier où les fichiers seront enregistrés
+    cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname); // Nom unique pour chaque fichier
+    cb(null, Date.now() + "-" + file.originalname);
   },
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limite de taille : 5MB
+  limits: {
+    fileSize: 5 * 1024 * 1024, // Limite de 5MB
+  },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("image/")) {
-      cb(null, true); // Accepter uniquement les fichiers image
+      cb(null, true);
     } else {
-      cb(new Error("Seuls les fichiers image sont autorisés"), false);
+      cb(new Error("Seules les images sont autorisées"), false);
     }
   },
 });
-
 
 router.post("/", login);
 
 router.post("/register", register);
 
-router.get("/Home", verifierToken, getUser);
+router.post( "/profile-update",verifierToken,upload.single("avatar"),profileUpdate);
 
-router.post("/profile-update", verifierToken, upload.single("avatar"), profileUpdate);
+router.get("/Home", getAllUsersAndUserById);
 
-module.exports = router; 
+
+module.exports = router;
