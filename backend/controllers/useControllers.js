@@ -67,7 +67,7 @@ module.exports.register = async (req, res) => {
   try {
     // Valider les données avec Zod
     const validatedData = userSchema.parse(req.body);
-    const { userName, email, password } = validatedData;
+    const { userName, email, password,avatar } = validatedData;
 
     // Vérifiez si l'email est déjà utilisé
     const emailCheck = await User.findOne({ email });
@@ -94,7 +94,6 @@ module.exports.register = async (req, res) => {
     return res.status(201).json({ status: true, user: userWithoutPassword });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      // Retourner les erreurs de validation
       return res.status(400).json({
         msg: error.errors.map((err) => err.message).join(", "),
         status: false,
@@ -134,117 +133,140 @@ const upload = multer({
 
 module.exports.profileUpdate = async (req, res) => {
   try {
-    console.log("=== Début de la mise à jour du profil ===");
-    console.log("Données reçues dans req.body :", req.body);
-    console.log("userId reçu :", req.userId);
-
-    // Vérifier si l'utilisateur est authentifié
     if (!req.userId) {
-      return res.status(401).json({ 
-        msg: "Non autorisé - Token manquant ou invalide", 
-        status: false 
+      return res.status(401).json({
+        msg: "Non autorisé - Token manquant ou invalide",
+        status: false,
       });
     }
 
-    // Valider les données reçues avec Zod
     const validatedData = profileUpdateSchema.parse(req.body);
     console.log("Données validées :", validatedData);
     const { userName, bio } = validatedData;
 
-    // Rechercher l'utilisateur dans la base de données
     const user = await User.findById(req.userId);
     if (!user) {
       console.log("Utilisateur non trouvé avec l'ID :", req.userId);
-      return res.status(404).json({ 
-        msg: "Utilisateur non trouvé", 
-        status: false 
+      return res.status(404).json({
+        msg: "Utilisateur non trouvé",
+        status: false,
       });
     }
 
     console.log("Ancien userName :", user.userName);
 
-    // Mettre à jour les champs
     if (userName !== undefined) user.userName = userName;
     if (bio !== undefined) user.bio = bio;
-    
 
-    
-    // Gestion de l'avatar
     if (req.file) {
       const newAvatarPath = "uploads/" + req.file.filename;
 
-      // Supprimer l'ancienne image si elle existe
-      if (user.avatar) {
+      if (user.avatar && user.avatar !== "uploads/utilisateur.png") {
         const oldImagePath = path.join(__dirname, "..", user.avatar);
         if (fs.existsSync(oldImagePath)) {
           try {
-            fs.unlinkSync(oldImagePath);
+            fs.unlinkSync(oldImagePath); 
             console.log("Ancienne image supprimée :", oldImagePath);
           } catch (error) {
             console.error("Erreur lors de la suppression de l'ancienne image :", error.message);
           }
         }
       }
-
-      // Mettre à jour le chemin de l'avatar
       user.avatar = newAvatarPath;
+    } else if (!user.avatar) {
+      user.avatar = "uploads/utilisateur.png";
     }
-    
-    
 
-    // Sauvegarder les modifications
     const updatedUser = await user.save();
     console.log("Utilisateur après sauvegarde :", {
       userName: user.userName,
       bio: user.bio,
-      avatar: user.avatar
+      avatar: user.avatar,
     });
 
-    // Retourner l'utilisateur mis à jour (sans le mot de passe)
     const { password: _, ...userWithoutPassword } = user.toObject();
- 
-    return res.status(200).json({ 
-      msg: "Profil mis à jour avec succès", 
-      status: true, 
-      user: userWithoutPassword 
+
+    return res.status(200).json({
+      msg: "Profil mis à jour avec succès",
+      status: true,
+      user: userWithoutPassword,
     });
   } catch (error) {
     console.error("Erreur lors de la mise à jour du profil :", error.message);
-    return res.status(500).json({ 
-      msg: "Erreur interne du serveur", 
-      status: false 
-    });
-  }
-};
-
-module.exports.getAllUsersAndUserById = async (req, res) => {
-  try {
-    const {userId} = req.query;
-    if(userId){
-      const user = await User.findById(userId);
-      if(!user){
-        return res.status(404).json({
-          msg: "Utilisateur non trouvé",
-          status: false,
-        });
-      }
-      return res.status(200).json(user);
-    }
-
-    const users = await User.find();
-    const usersMapped = users.map(user => ({
-      id: user._id,
-      userName: user.userName,
-      avatar: user.avatar,
-      bio: user.bio,
-    }));
-    res.status(200).json(usersMapped);
-  } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       msg: "Erreur interne du serveur",
       status: false,
     });
   }
 };
 
+module.exports.getUser = async (req, res) => {
+  try {
+    // Récupérer l'ID de l'utilisateur depuis req.params
+    const userId = req.params.id;
+    console.log("ID de l'utilisateur reçu :", userId);
 
+    if (!userId) {
+      return res.status(400).json({
+        msg: "L'ID de l'utilisateur est requis",
+        status: false,
+      });
+    }
+
+    // Rechercher l'utilisateur dans la base de données
+    const user = await User.findById(userId);
+    if (!user) {
+      console.log("Utilisateur non trouvé pour l'ID :", userId);
+      return res.status(404).json({
+        msg: "Utilisateur non trouvé",
+        status: false,
+      });
+    }
+    return res.status(200).json({
+      msg: "Utilisateur trouvé",
+      status: true,
+      user: {
+        id: user._id,
+        userName: user.userName,
+        avatar: user.avatar,
+        bio: user.bio,
+      },
+    });
+    
+  } catch (error) {
+    console.error("Erreur lors de la récupération de l'utilisateur :", error.message);
+    return res.status(500).json({
+      msg: "Erreur interne du serveur",
+      status: false,
+    });
+  }
+};
+
+module.exports.getAllUser = async (req , res ) =>{
+  try {
+    if (!req.userId) {
+      return res.status(401).json({
+        msg: "Non autorisé - Token manquant ou invalide",
+        status: false,
+      });
+    }
+    const users = await User.find({ _id: { $ne: req.userId } }).select("-password");
+    return res.status(200).json({
+      msg: "Utilisateurs récupérés avec succès",
+      status: true,
+      users: users.map(user => ({
+        id: user._id,
+        userName: user.userName,
+        avatar: user.avatar,
+        bio: user.bio,
+      })),
+    });
+
+  }catch(error){
+    console.error("Erreur lors de la vérification du token :", error.message);
+    return res.status(401).json({
+      msg: "Non autorisé - Token invalide",
+      status: false,
+    });
+  }
+}
