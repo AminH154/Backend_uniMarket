@@ -9,8 +9,6 @@ const verifierToken = (req, res, next) => {
     if (!authHeader) {
       return res.status(401).json({ message: "Token non fourni", status: false });
     }
-
-    // Le format est généralement "Bearer <token>"
     const token = authHeader.split(' ')[1];
     if (!token) {
       return res.status(401).json({ message: "Format de token invalide", status: false });

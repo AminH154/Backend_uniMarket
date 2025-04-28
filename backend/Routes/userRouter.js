@@ -1,4 +1,4 @@
-const {login, register, profileUpdate,getAllUsersAndUserById} = require("../controllers/useControllers");
+const {login, register, profileUpdate,getAllUsersAndUserById, getUser,getAllUser} = require("../controllers/useControllers");
 const router = require("express").Router();
 const { verifierToken } = require("../authMiddleware/authMidleWare");
 const multer = require("multer");
@@ -33,7 +33,9 @@ router.post("/register", register);
 
 router.post( "/profile-update",verifierToken,upload.single("avatar"),profileUpdate);
 
-router.get("/Home", getAllUsersAndUserById);
+router.get("/Home/:id", getUser);
+
+router.get("/Home",verifierToken,getAllUser);
 
 
 module.exports = router;
