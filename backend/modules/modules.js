@@ -5,6 +5,7 @@ const userSchema = z.object({
   email: z.string().email({ message: "Email invalide" }),
   password: z.string().min(6, { message: "Le mot de passe doit contenir au moins 6 caractères" }),
   userName: z.string().optional(), 
+  userName: z.string().optional(), // Facultatif pour la connexion
 });
 
 const profileUpdateSchema = z.object({
@@ -31,6 +32,10 @@ const userMongoSchema = new mongoose.Schema({
     type: String,
      default:"uploads/utilisateur.png" , 
      requared: false },
+  userName: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  avatar: { type: String, default:"uploads/utilisateur.png" , requared: false },
   bio: { type: String, required: false },
 });
 
