@@ -33,10 +33,7 @@ module.exports.login = async (req, res) => {
     }
 
     // Générer le token JWT
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' }
     );
 
     const { password: _, ...userWithoutPassword } = user.toObject();
@@ -61,9 +58,9 @@ module.exports.login = async (req, res) => {
       .json({ msg: "Erreur interne du serveur", status: false });
   }
 };
-// Contrôleur pour l'inscription
+
 module.exports.register = async (req, res) => {
-  console.log("Données reçues dans req.body :", req.body); // Vérifie les données reçues
+  console.log("Données reçues dans req.body :", req.body); 
   try {
     // Valider les données avec Zod
     const validatedData = userSchema.parse(req.body);
